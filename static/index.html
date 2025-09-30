@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VideoConf - Teste Super Simples</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        input[type="text"] {
+            width: 250px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        input[type="text"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: black;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            gap: 30px;
+            margin: 15px 0;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .videos {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .video-box {
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+        }
+        
+        .video-box.local {
+            border-color: #007bff;
+        }
+        
+        .video-box.remote {
+            border-color: #28a745;
+        }
+        
+        video {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .video-label {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 8px;
+            font-weight: bold;
+            position: relative;
+        }
+        
+        .audio-indicator {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #dc3545;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: none;
+        }
+        
+        .audio-indicator.active {
+            background: #28a745;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translateY(-50%) scale(1); opacity: 1; }
+            50% { transform: translateY(-50%) scale(1.2); opacity: 0.7; }
+            100% { transform: translateY(-50%) scale(1); opacity: 1; }
+        }
+        
+        .no-video {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(45deg, #333, #555);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #007bff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .logs {
+            height: 200px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 30px;
+        }
+        
+        .status-bar {
+            background: #e9ecef;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .diagnostic-section {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎥 VideoConf - Teste de Problemas</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Problemas com câmera/microfone?</strong><br>
+            1. Clique no botão "🔍 Diagnosticar" antes de conectar<br>
+            2. Se der erro, desmarque "Usar Câmera" e "Usar Microfone"<br>
+            3. Você ainda poderá ver/ouvir outros usuários!
+        </div>
+        
+        <!-- Status -->
+        <div id="statusBar" class="status-bar">
+            🔴 Desconectado - Preencha os dados e teste
+        </div>
+        
+        <!-- Diagnóstico -->
+        <div class="diagnostic-section">
+            <h3>🔍 Diagnóstico de Mídia</h3>
+            <button id="diagnosticBtn" class="btn-warning">🔍 Testar Câmera/Microfone</button>
+            <button id="listDevicesBtn" class="btn-warning">📱 Listar Dispositivos</button>
+            <div id="diagnosticResult"></div>
+        </div>
+        
+        <!-- Formulário -->
+        <div class="form-group">
+            <label>Seu Nome:</label>
+            <input type="text" id="nameInput" placeholder="Digite seu nome" value="Usuario_Teste">
+        </div>
+        
+        <div class="form-group">
+            <label>ID da Sala:</label>
+            <input type="text" id="roomInput" placeholder="Digite o ID da sala" value="sala123">
+        </div>
+        
+        <div class="form-group">
+            <label>Opções de Mídia:</label>
+            <div class="checkbox-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="enableVideo" checked>
+                    <label for="enableVideo">📹 Usar Câmera</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="enableAudio" checked>
+                    <label for="enableAudio">🎤 Usar Microfone</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Botões principais -->
+        <div class="form-group">
+            <button id="connectBtn" class="btn-primary">🚀 Conectar na Sala</button>
+            <button id="connectNoMediaBtn" class="btn-success">👁️ Entrar Só para Ver/Ouvir</button>
+            <button id="disconnectBtn" class="btn-danger" disabled>❌ Sair</button>
+        </div>
+        
+        <!-- Controles durante chamada -->
+        <div class="form-group">
+            <button id="toggleCameraBtn" class="btn-warning" disabled>📹 Camera ON/OFF</button>
+            <button id="toggleMicBtn" class="btn-warning" disabled>🎤 Mic ON/OFF</button>
+            <button id="testAudioBtn" class="btn-warning">🔊 Testar Meu Áudio</button>
+            <button id="checkMicLevelBtn" class="btn-warning">📊 Ver Nível do Mic</button>
+        </div>
+        
+        <!-- Vídeos -->
+        <div class="videos" id="videosContainer">
+            <!-- Vídeos aparecerão aqui -->
+        </div>
+        
+        <!-- Logs -->
+        <h3>📝 Logs do Sistema</h3>
+        <div class="logs" id="logsContainer">
+            Logs aparecerão aqui...<br>
+        </div>
+    </div>
+
+    <script>
+        class SimpleVideoConf {
+            constructor() {
+                this.ws = null;
+                this.localStream = null;
+                this.peerConnections = new Map();
+                this.isConnected = false;
+                this.userId = null;
+                this.userName = null;
+                
+                this.setupEventListeners();
+                this.log('🚀 Sistema inicializado');
+                this.log('💡 DICA: Teste o diagnóstico antes de conectar!');
+            }
+            
+            setupEventListeners() {
+                document.getElementById('connectBtn').onclick = () => this.connect(true);
+                document.getElementById('connectNoMediaBtn').onclick = () => this.connect(false);
+                document.getElementById('disconnectBtn').onclick = () => this.disconnect();
+                document.getElementById('toggleCameraBtn').onclick = () => this.toggleCamera();
+                document.getElementById('toggleMicBtn').onclick = () => this.toggleMic();
+                document.getElementById('diagnosticBtn').onclick = () => this.runDiagnostic();
+                document.getElementById('listDevicesBtn').onclick = () => this.listDevices();
+                document.getElementById('testAudioBtn').onclick = () => this.testMyAudio();
+                document.getElementById('checkMicLevelBtn').onclick = () => this.checkMicrophoneLevel();
+            }
+            
+            async checkMicrophoneLevel() {
+                this.log('📊 Verificando nível do microfone...');
+                
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const analyser = audioContext.createAnalyser();
+                    const microphone = audioContext.createMediaStreamSource(stream);
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    
+                    analyser.smoothingTimeConstant = 0.8;
+                    analyser.fftSize = 256;
+                    microphone.connect(analyser);
+                    
+                    let maxLevel = 0;
+                    const duration = 5000; // 5 segundos
+                    const startTime = Date.now();
+                    
+                    alert('🎤 TESTE DE MICROFONE\n\n' +
+                          'FALE AGORA por 5 segundos!\n' +
+                          'Vamos medir o volume do seu microfone.\n\n' +
+                          'Clique OK e comece a falar normalmente.');
+                    
+                    const checkLevel = () => {
+                        analyser.getByteFrequencyData(dataArray);
+                        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                        
+                        if (average > maxLevel) {
+                            maxLevel = average;
+                        }
+                        
+                        // Mostrar nível em tempo real no log
+                        if (average > 0) {
+                            const bars = '█'.repeat(Math.floor(average / 5));
+                            this.log(`🎤 Nível: ${bars} (${average.toFixed(1)})`);
+                        }
+                        
+                        if (Date.now() - startTime < duration) {
+                            requestAnimationFrame(checkLevel);
+                        } else {
+                            // Finalizar teste
+                            stream.getTracks().forEach(track => track.stop());
+                            audioContext.close();
+                            
+                            let resultado = '';
+                            if (maxLevel < 5) {
+                                resultado = '❌ Microfone MUITO BAIXO ou MUDO\n' +
+                                          '• Aumente o volume do microfone no Windows\n' +
+                                          '• Verifique se não está mudo\n' +
+                                          '• Fale mais perto do microfone';
+                            } else if (maxLevel < 10) {
+                                resultado = '⚠️ Microfone BAIXO\n' +
+                                          '• Fale mais alto ou mais perto\n' +
+                                          '• Aumente o volume do microfone';
+                            } else if (maxLevel < 30) {
+                                resultado = '✅ Microfone OK!\n' +
+                                          '• Volume adequado\n' +
+                                          '• O indicador deve funcionar';
+                            } else {
+                                resultado = '🔊 Microfone ALTO\n' +
+                                          '• Volume muito alto (pode distorcer)\n' +
+                                          '• Considere reduzir um pouco';
+                            }
+                            
+                            this.log(`📊 Teste finalizado. Nível máximo: ${maxLevel.toFixed(1)}`);
+                            alert(`📊 RESULTADO DO TESTE\n\n` +
+                                  `Nível máximo detectado: ${maxLevel.toFixed(1)}\n\n` +
+                                  resultado);
+                        }
+                    };
+                    
+                    checkLevel();
+                    
+                } catch (error) {
+                    this.log(`❌ Erro ao testar microfone: ${error.message}`);
+                    alert('❌ Erro ao acessar microfone!\n\n' + error.message);
+                }
+            }
+            
+            async runDiagnostic() {
+                const btn = document.getElementById('diagnosticBtn');
+                const result = document.getElementById('diagnosticResult');
+                
+                btn.disabled = true;
+                btn.textContent = '🔄 Testando...';
+                result.innerHTML = '<p>Executando diagnóstico...</p>';
+                
+                try {
+                    this.log('🔍 Iniciando diagnóstico completo...');
+                    
+                    // 1. Verificar suporte WebRTC
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error('WebRTC não suportado neste navegador');
+                    }
+                    this.log('✅ WebRTC suportado');
+                    
+                    // 2. Listar dispositivos
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const cameras = devices.filter(d => d.kind === 'videoinput');
+                    const mics = devices.filter(d => d.kind === 'audioinput');
+                    
+                    this.log(`📱 Encontrados: ${cameras.length} câmeras, ${mics.length} microfones`);
+                    
+                    let info = [`📊 <strong>Diagnóstico Completo:</strong>`];
+                    info.push(`🌐 Navegador: ${navigator.userAgent.split(' ').slice(-1)[0]}`);
+                    info.push(`🔒 Protocolo: ${window.location.protocol}`);
+                    info.push(`📹 Câmeras: ${cameras.length}`);
+                    info.push(`🎤 Microfones: ${mics.length}`);
+                    
+                    // 3. Testar acesso à mídia
+                    const enableVideo = document.getElementById('enableVideo').checked;
+                    const enableAudio = document.getElementById('enableAudio').checked;
+                    
+                    if (enableVideo || enableAudio) {
+                        this.log('🎯 Testando acesso à mídia...');
+                        
+                        const testStream = await navigator.mediaDevices.getUserMedia({
+                            video: enableVideo ? { width: 640, height: 480 } : false,
+                            audio: enableAudio
+                        });
+                        
+                        const videoTracks = testStream.getVideoTracks();
+                        const audioTracks = testStream.getAudioTracks();
+                        
+                        info.push(`✅ <span style="color: green;">Vídeo: ${videoTracks.length > 0 ? 'FUNCIONANDO' : 'Não solicitado'}</span>`);
+                        info.push(`✅ <span style="color: green;">Áudio: ${audioTracks.length > 0 ? 'FUNCIONANDO' : 'Não solicitado'}</span>`);
+                        
+                        // Mostrar detalhes dos tracks
+                        videoTracks.forEach((track, i) => {
+                            const settings = track.getSettings();
+                            info.push(`📹 Câmera ${i+1}: ${settings.width}x${settings.height}`);
+                        });
+                        
+                        audioTracks.forEach((track, i) => {
+                            const settings = track.getSettings();
+                            info.push(`🎤 Microfone ${i+1}: ${settings.sampleRate || 'desconhecido'}Hz`);
+                        });
+                        
+                        // Parar teste
+                        testStream.getTracks().forEach(track => track.stop());
+                        
+                        info.push(`<br><span style="color: green; font-weight: bold;">🎉 SUCESSO! Seus dispositivos funcionam perfeitamente.</span>`);
+                        info.push(`✅ Pode usar "Conectar na Sala" com segurança.`);
+                        
+                        this.log('✅ Diagnóstico: SUCESSO!');
+                        
+                    } else {
+                        info.push(`⚠️ <span style="color: orange;">Nenhuma mídia selecionada para teste</span>`);
+                        info.push(`💡 Use "Entrar Só para Ver/Ouvir" se quiser conectar sem câmera/mic`);
+                    }
+                    
+                    result.innerHTML = '<div class="success">' + info.join('<br>') + '</div>';
+                    
+                } catch (error) {
+                    this.log(`❌ Erro no diagnóstico: ${error.name} - ${error.message}`);
+                    
+                    let errorInfo = [`❌ <strong>Erro Encontrado:</strong>`];
+                    errorInfo.push(`🚫 Tipo: ${error.name}`);
+                    errorInfo.push(`📝 Mensagem: ${error.message}`);
+                    errorInfo.push(`<br><strong>🔧 Soluções Recomendadas:</strong>`);
+                    
+                    if (error.name === 'NotFoundError') {
+                        errorInfo.push(`1. 📱 Conecte uma câmera/microfone USB`);
+                        errorInfo.push(`2. 🔄 Verifique se outros apps não estão usando`);
+                        errorInfo.push(`3. 💻 Reinstale drivers de áudio/vídeo`);
+                    } else if (error.name === 'NotAllowedError') {
+                        errorInfo.push(`1. 🔒 Clique no ícone de CADEADO na barra de endereço`);
+                        errorInfo.push(`2. ✅ Selecione "Permitir" para câmera e microfone`);
+                        errorInfo.push(`3. 🔄 Recarregue a página (F5)`);
+                    } else if (error.name === 'NotReadableError') {
+                        errorInfo.push(`1. ❌ Feche: Zoom, Teams, Discord, OBS, Skype`);
+                        errorInfo.push(`2. 🌐 Feche outras abas com vídeo`);
+                        errorInfo.push(`3. 🔄 Reinicie o navegador`);
+                    }
+                    
+                    errorInfo.push(`<br><span style="color: blue; font-weight: bold;">💡 ALTERNATIVA: Use "Entrar Só para Ver/Ouvir"</span>`);
+                    
+                    result.innerHTML = '<div class="error">' + errorInfo.join('<br>') + '</div>';
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = '🔍 Testar Câmera/Microfone';
+                }
+            }
+            
+            async listDevices() {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    
+                    this.log('📱 Listando todos os dispositivos:');
+                    devices.forEach((device, index) => {
+                        const label = device.label || `Dispositivo ${index + 1}`;
+                        const id = device.deviceId.substring(0, 8) + '...';
+                        this.log(`  ${index + 1}. [${device.kind}] ${label} (${id})`);
+                    });
+                    
+                    const cameras = devices.filter(d => d.kind === 'videoinput');
+                    const mics = devices.filter(d => d.kind === 'audioinput');
+                    
+                    alert(`📱 Dispositivos encontrados:\n\n📹 Câmeras: ${cameras.length}\n🎤 Microfones: ${mics.length}\n\n(Veja detalhes no log)`);
+                    
+                } catch (error) {
+                    this.log(`❌ Erro ao listar dispositivos: ${error.message}`);
+                    alert('Erro ao listar dispositivos: ' + error.message);
+                }
+            }
+            
+            async connect(useMedia = true) {
+                const name = document.getElementById('nameInput').value.trim();
+                const room = document.getElementById('roomInput').value.trim();
+                
+                if (!name || !room) {
+                    alert('❌ Preencha seu nome e ID da sala!');
+                    return;
+                }
+                
+                this.userName = name;
+                this.userId = 'user_' + Date.now();
+                
+                this.log(`🚀 Conectando como "${name}" na sala "${room}"...`);
+                this.updateStatus('🔄 Conectando...', false);
+                
+                try {
+                    // 1. Obter mídia apenas se solicitado
+                    if (useMedia) {
+                        const enableVideo = document.getElementById('enableVideo').checked;
+                        const enableAudio = document.getElementById('enableAudio').checked;
+                        
+                        if (enableVideo || enableAudio) {
+                            this.log('📹 Solicitando acesso à mídia...');
+                            
+                            try {
+                                this.localStream = await navigator.mediaDevices.getUserMedia({
+                                    video: enableVideo ? { 
+                                        width: { ideal: 640 },
+                                        height: { ideal: 480 }
+                                    } : false,
+                                    audio: enableAudio
+                                });
+                                
+                                this.log('✅ Mídia obtida com sucesso!');
+                                this.createVideoElement('local', `${name} (Você)`, this.localStream, true);
+                                // Configurar detecção de áudio para o stream local
+                                this.setupAudioDetection(this.localStream, 'local');
+                                
+                            } catch (mediaError) {
+                                this.log(`❌ Erro de mídia: ${mediaError.message}`);
+                                
+                                const continueAnyway = confirm(
+                                    `❌ Erro ao acessar câmera/microfone:\n${mediaError.message}\n\n` +
+                                    `💡 Deseja continuar SEM mídia?\n(Você poderá ver/ouvir outros usuários)`
+                                );
+                                
+                                if (!continueAnyway) {
+                                    this.updateStatus('❌ Conexão cancelada', false);
+                                    return;
+                                }
+                                
+                                this.log('⚠️ Continuando sem mídia...');
+                            }
+                        } else {
+                            this.log('⚠️ Nenhuma mídia selecionada - entrando como ouvinte');
+                        }
+                    } else {
+                        this.log('👁️ Modo apenas visualização - sem câmera/microfone');
+                    }
+                    
+                    // 2. Conectar WebSocket - PORTA CORRIGIDA AQUI!
+                    this.log('🌐 Conectando ao servidor na porta 8084...');
+                    const wsUrl = `ws://localhost:8084/video-signaling?user_id=${this.userId}&user_name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+                    this.ws = new WebSocket(wsUrl);
+                    
+                    this.ws.onopen = () => {
+                        this.log('✅ WebSocket conectado!');
+                        this.isConnected = true;
+                        this.updateUI();
+                        this.updateStatus(`🟢 Conectado na sala: ${room}`, true);
+                    };
+                    
+                    this.ws.onmessage = (event) => {
+                        const message = JSON.parse(event.data);
+                        this.log(`📨 [${message.type}] de ${message.from || 'servidor'}`);
+                        this.handleMessage(message);
+                    };
+                    
+                    this.ws.onclose = () => {
+                        this.log('🔴 WebSocket desconectado');
+                        this.isConnected = false;
+                        this.updateUI();
+                        this.updateStatus('🔴 Desconectado', false);
+                    };
+                    
+                    this.ws.onerror = () => {
+                        this.log('❌ Erro de conexão WebSocket - Verifique se o servidor está rodando na porta 8084');
+                        this.updateStatus('❌ Erro de conexão', false);
+                        alert('❌ Não foi possível conectar ao servidor.\n\nVerifique:\n1. O servidor Go está rodando?\n2. Está na porta 8084?\n3. Execute: go run main.go');
+                    };
+                    
+                } catch (error) {
+                    this.log(`❌ Erro geral: ${error.message}`);
+                    this.updateStatus('❌ Erro na conexão', false);
+                    alert('Erro: ' + error.message);
+                }
+            }
+            
+            async handleMessage(message) {
+                switch (message.type) {
+                    case 'user-list':
+                        this.log(`👥 ${message.user_list ? message.user_list.length : 0} usuários na sala`);
+                        if (message.user_list && message.user_list.length > 0) {
+                            for (const user of message.user_list) {
+                                await this.createPeerConnection(user.id, user.name, true);
+                                this.createVideoElement(user.id, user.name);
+                            }
+                        }
+                        break;
+                        
+                    case 'user-joined':
+                        this.log(`👋 ${message.user_info.name} entrou`);
+                        this.createVideoElement(message.user_info.id, message.user_info.name);
+                        // IMPORTANTE: Criar conexão P2P quando alguém entrar
+                        await this.createPeerConnection(message.from || message.user_info.id, message.user_info.name, false);
+                        break;
+                        
+                    case 'user-left':
+                        this.log(`👋 ${message.from} saiu`);
+                        this.removeVideoElement(message.from);
+                        if (this.peerConnections.has(message.from)) {
+                            this.peerConnections.get(message.from).close();
+                            this.peerConnections.delete(message.from);
+                        }
+                        break;
+                        
+                    case 'offer':
+                        await this.handleOffer(message);
+                        break;
+                        
+                    case 'answer':
+                        await this.handleAnswer(message);
+                        break;
+                        
+                    case 'ice-candidate':
+                        await this.handleIceCandidate(message);
+                        break;
+                        
+                    case 'error':
+                        this.log(`❌ Erro do servidor: ${message.message}`);
+                        break;
+                }
+            }
+            
+            async createPeerConnection(userId, userName, createOffer = false) {
+                this.log(`🤝 Iniciando conexão P2P com ${userName} (${userId})...`);
+                
+                try {
+                    const pc = new RTCPeerConnection({
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    });
+                    
+                    // Adicionar stream local se houver
+                    if (this.localStream) {
+                        this.localStream.getTracks().forEach(track => {
+                            pc.addTrack(track, this.localStream);
+                            this.log(`📤 Adicionando ${track.kind} para enviar para ${userName}`);
+                        });
+                    } else {
+                        this.log(`⚠️ Sem stream local para enviar para ${userName}`);
+                    }
+                    
+                    // Eventos
+                    pc.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            this.log(`🧊 Enviando ICE candidate para ${userName}`);
+                            this.sendMessage({
+                                type: 'ice-candidate',
+                                to: userId,
+                                ice: event.candidate.toJSON()
+                            });
+                        }
+                    };
+                    
+                    pc.ontrack = (event) => {
+                        this.log(`📥 Stream recebido de ${userName} - ${event.track.kind}`);
+                        this.updateVideoElement(userId, event.streams[0]);
+                    };
+                    
+                    pc.onconnectionstatechange = () => {
+                        this.log(`🔗 Estado da conexão com ${userName}: ${pc.connectionState}`);
+                        if (pc.connectionState === 'connected') {
+                            this.log(`✅ P2P CONECTADO com ${userName}!`);
+                        } else if (pc.connectionState === 'failed') {
+                            this.log(`❌ P2P FALHOU com ${userName}`);
+                        }
+                    };
+                    
+                    this.peerConnections.set(userId, pc);
+                    
+                    if (createOffer) {
+                        this.log(`📞 Criando oferta para ${userName}...`);
+                        const offer = await pc.createOffer();
+                        await pc.setLocalDescription(offer);
+                        
+                        const offerMsg = {
+                            type: 'offer',
+                            to: userId,
+                            offer: offer
+                        };
+                        
+                        this.log(`📤 Enviando oferta para ${userName}`);
+                        this.sendMessage(offerMsg);
+                    }
+                    
+                } catch (error) {
+                    this.log(`❌ Erro ao criar conexão P2P com ${userName}: ${error.message}`);
+                }
+            }
+            
+            async handleOffer(message) {
+                this.log(`📞 Chamada recebida de ${message.from}`);
+                
+                const pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                // Eventos
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        this.sendMessage({
+                            type: 'ice-candidate',
+                            to: message.from,
+                            ice: event.candidate.toJSON()
+                        });
+                    }
+                };
+                
+                pc.ontrack = (event) => {
+                    this.log(`📥 Stream recebido de ${message.from}`);
+                    this.updateVideoElement(message.from, event.streams[0]);
+                };
+                
+                // Adicionar stream local se houver
+                if (this.localStream) {
+                    this.localStream.getTracks().forEach(track => {
+                        pc.addTrack(track, this.localStream);
+                    });
+                }
+                
+                this.peerConnections.set(message.from, pc);
+                
+                await pc.setRemoteDescription(message.offer);
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                
+                this.sendMessage({
+                    type: 'answer',
+                    to: message.from,
+                    answer: answer
+                });
+            }
+            
+            async handleAnswer(message) {
+                const pc = this.peerConnections.get(message.from);
+                if (pc) {
+                    await pc.setRemoteDescription(message.answer);
+                }
+            }
+            
+            async handleIceCandidate(message) {
+                const pc = this.peerConnections.get(message.from);
+                if (pc && message.ice) {
+                    await pc.addIceCandidate(message.ice);
+                }
+            }
+            
+            createVideoElement(userId, userName, stream = null, isMuted = false) {
+                const container = document.getElementById('videosContainer');
+                
+                // Não duplicar
+                if (document.getElementById(`video-${userId}`)) return;
+                
+                const videoBox = document.createElement('div');
+                videoBox.className = `video-box ${userId === 'local' ? 'local' : 'remote'}`;
+                videoBox.id = `video-${userId}`;
+                
+                if (stream) {
+                    const video = document.createElement('video');
+                    video.autoplay = true;
+                    video.playsInline = true;
+                    video.muted = isMuted;
+                    video.srcObject = stream;
+                    videoBox.appendChild(video);
+                    
+                    // Adicionar detector de áudio
+                    if (!isMuted) {
+                        this.setupAudioDetection(stream, userId);
+                    }
+                } else {
+                    const noVideo = document.createElement('div');
+                    noVideo.className = 'no-video';
+                    noVideo.innerHTML = `
+                        <div class="avatar">${userName.charAt(0).toUpperCase()}</div>
+                        <div>Sem vídeo</div>
+                    `;
+                    videoBox.appendChild(noVideo);
+                    
+                    // Adicionar detector de áudio mesmo sem vídeo se houver stream
+                    if (stream && stream.getAudioTracks().length > 0) {
+                        this.setupAudioDetection(stream, userId);
+                    }
+                }
+                
+                const label = document.createElement('div');
+                label.className = 'video-label';
+                label.innerHTML = `
+                    ${userName}
+                    <span class="audio-indicator" id="audio-${userId}">🔇</span>
+                `;
+                videoBox.appendChild(label);
+                
+                container.appendChild(videoBox);
+                this.log(`📺 Vídeo criado: ${userName}`);
+            }
+            
+            setupAudioDetection(stream, userId) {
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const analyser = audioContext.createAnalyser();
+                    const microphone = audioContext.createMediaStreamSource(stream);
+                    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                    
+                    analyser.smoothingTimeConstant = 0.8;
+                    analyser.fftSize = 256;
+                    microphone.connect(analyser);
+                    
+                    const checkAudio = () => {
+                        analyser.getByteFrequencyData(dataArray);
+                        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                        
+                        const indicator = document.getElementById(`audio-${userId}`);
+                        if (indicator) {
+                            // Threshold reduzido de 10 para 5 - mais sensível
+                            if (average > 5) { 
+                                indicator.classList.add('active');
+                                indicator.textContent = '🔊';
+                                
+                                // Log para debug quando detectar som
+                                if (userId === 'local' && !this.lastSoundLog) {
+                                    this.log(`🎤 Som detectado! Nível: ${average.toFixed(1)}`);
+                                    this.lastSoundLog = true;
+                                    setTimeout(() => this.lastSoundLog = false, 1000);
+                                }
+                            } else {
+                                indicator.classList.remove('active');
+                                indicator.textContent = '🔇';
+                            }
+                        }
+                        
+                        requestAnimationFrame(checkAudio);
+                    };
+                    
+                    checkAudio();
+                    this.log(`🎙️ Detector de áudio ativado para ${userId} - Sensibilidade alta`);
+                } catch (error) {
+                    this.log(`⚠️ Não foi possível ativar detector de áudio: ${error.message}`);
+                }
+            }
+            
+            updateVideoElement(userId, stream) {
+                const videoBox = document.getElementById(`video-${userId}`);
+                if (!videoBox) return;
+                
+                // Remover placeholder se existir
+                const noVideo = videoBox.querySelector('.no-video');
+                if (noVideo) noVideo.remove();
+                
+                // Adicionar ou atualizar vídeo
+                let video = videoBox.querySelector('video');
+                if (!video) {
+                    video = document.createElement('video');
+                    video.autoplay = true;
+                    video.playsInline = true;
+                    videoBox.insertBefore(video, videoBox.lastElementChild);
+                }
+                
+                video.srcObject = stream;
+                
+                // Configurar detecção de áudio para streams remotos
+                this.setupAudioDetection(stream, userId);
+                
+                this.log(`🔄 Vídeo atualizado: ${userId}`);
+            }
+            
+            testMyAudio() {
+                this.log('🔊 Iniciando teste de áudio...');
+                
+                // Criar um som de teste
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                // Tom de teste
+                oscillator.frequency.value = 440; // Nota Lá (A4)
+                gainNode.gain.value = 0.3;
+                oscillator.type = 'sine';
+                
+                // Tocar por 1 segundo
+                oscillator.start();
+                
+                alert('🔊 TESTE DE ÁUDIO\n\n' +
+                      '1. Você deve ouvir um "beep" agora\n' +
+                      '2. Se não ouvir, verifique:\n' +
+                      '   • Volume do computador\n' +
+                      '   • Fones/caixas de som\n\n' +
+                      '3. Para testar o MICROFONE:\n' +
+                      '   • Fale após conectar\n' +
+                      '   • Veja o indicador 🔊 piscar\n' +
+                      '   • Outros usuários verão quando você falar');
+                
+                setTimeout(() => {
+                    oscillator.stop();
+                    this.log('✅ Teste de áudio finalizado');
+                }, 1000);
+            }
+            
+            removeVideoElement(userId) {
+                const videoBox = document.getElementById(`video-${userId}`);
+                if (videoBox) {
+                    videoBox.remove();
+                    this.log(`🗑️ Vídeo removido: ${userId}`);
+                }
+            }
+            
+            toggleCamera() {
+                if (!this.localStream) {
+                    this.log('❌ Não há stream local para controlar');
+                    return;
+                }
+                
+                const videoTrack = this.localStream.getVideoTracks()[0];
+                if (videoTrack) {
+                    videoTrack.enabled = !videoTrack.enabled;
+                    this.log(`📹 Câmera: ${videoTrack.enabled ? 'LIGADA' : 'DESLIGADA'}`);
+                } else {
+                    this.log('❌ Nenhum track de vídeo encontrado');
+                }
+            }
+            
+            toggleMic() {
+                if (!this.localStream) {
+                    this.log('❌ Não há stream local para controlar');
+                    return;
+                }
+                
+                const audioTrack = this.localStream.getAudioTracks()[0];
+                if (audioTrack) {
+                    audioTrack.enabled = !audioTrack.enabled;
+                    this.log(`🎤 Microfone: ${audioTrack.enabled ? 'LIGADO' : 'DESLIGADO'}`);
+                } else {
+                    this.log('❌ Nenhum track de áudio encontrado');
+                }
+            }
+            
+            disconnect() {
+                this.log('🚪 Desconectando...');
+                
+                if (this.ws) this.ws.close();
+                
+                this.peerConnections.forEach((pc, userId) => {
+                    pc.close();
+                    this.log(`🔌 Conexão fechada com ${userId}`);
+                });
+                this.peerConnections.clear();
+                
+                if (this.localStream) {
+                    this.localStream.getTracks().forEach(track => {
+                        track.stop();
+                        this.log(`⏹️ ${track.kind} parado`);
+                    });
+                    this.localStream = null;
+                }
+                
+                // Limpar vídeos
+                document.getElementById('videosContainer').innerHTML = '';
+                
+                this.isConnected = false;
+                this.updateUI();
+                this.updateStatus('🔴 Desconectado', false);
+            }
+            
+            sendMessage(message) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(message));
+                } else {
+                    this.log('❌ WebSocket não conectado');
+                }
+            }
+            
+            updateUI() {
+                document.getElementById('connectBtn').disabled = this.isConnected;
+                document.getElementById('connectNoMediaBtn').disabled = this.isConnected;
+                document.getElementById('disconnectBtn').disabled = !this.isConnected;
+                document.getElementById('toggleCameraBtn').disabled = !this.isConnected || !this.localStream;
+                document.getElementById('toggleMicBtn').disabled = !this.isConnected || !this.localStream;
+            }
+            
+            updateStatus(message, isConnected) {
+                const status = document.getElementById('statusBar');
+                status.textContent = message;
+                status.className = `status-bar ${isConnected ? 'status-connected' : ''}`;
+            }
+            
+            log(message) {
+                const logs = document.getElementById('logsContainer');
+                const time = new Date().toLocaleTimeString();
+                logs.innerHTML += `<span style="color: #666;">[${time}]</span> ${message}<br>`;
+                logs.scrollTop = logs.scrollHeight;
+                console.log(`[VideoConf] ${message}`);
+            }
+        }
+        
+        // Inicializar
+        window.onload = () => {
+            new SimpleVideoConf();
+        };
+    </script>
+</body>
+</html>
