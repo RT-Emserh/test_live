@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/pion/webrtc/v3"
 )
 
+// [MANTENHA TODAS AS STRUCTS DO CÓDIGO ANTERIOR - IGUAIS]
 type SignalingMessage struct {
 	Type     string                     `json:"type"`
 	From     string                     `json:"from"`
@@ -63,9 +65,13 @@ type VideoHub struct {
 	mutex      sync.RWMutex
 }
 
+// IMPORTANTE: CORS configurado para produção
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true
+		// Em produção, você pode querer limitar origins específicos
+		// origin := r.Header.Get("Origin")
+		// return origin == "https://seu-dominio.com"
+		return true // Por enquanto aceita qualquer origem
 	},
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
@@ -82,7 +88,6 @@ func NewVideoHub() *VideoHub {
 }
 
 func (h *VideoHub) Run() {
-	// Cleanup ticker para remover salas vazias
 	cleanupTicker := time.NewTicker(5 * time.Minute)
 	defer cleanupTicker.Stop()
 
@@ -126,10 +131,7 @@ func (h *VideoHub) handleClientRegister(client *VideoClient) {
 
 	log.Printf("Cliente %s (%s) conectado na sala %s", client.ID, client.Name, client.RoomID)
 
-	// Enviar lista de usuários para o novo cliente
 	h.sendUserListToClient(client)
-
-	// Notificar outros clientes sobre novo participante
 	h.broadcastUserJoined(room, client)
 }
 
@@ -146,7 +148,6 @@ func (h *VideoHub) handleClientUnregister(client *VideoClient) {
 	if _, ok := room.Clients[client.ID]; ok {
 		delete(room.Clients, client.ID)
 
-		// Fechar todas as conexões peer
 		client.mutex.Lock()
 		for peerID, pc := range client.PeerConns {
 			log.Printf("Fechando conexão peer entre %s e %s", client.ID, peerID)
@@ -157,7 +158,6 @@ func (h *VideoHub) handleClientUnregister(client *VideoClient) {
 
 		client.Conn.Close()
 
-		// Notificar outros clientes sobre a saída
 		for _, otherClient := range room.Clients {
 			msg := &SignalingMessage{
 				Type:   "user-left",
@@ -166,7 +166,6 @@ func (h *VideoHub) handleClientUnregister(client *VideoClient) {
 			}
 			otherClient.Conn.WriteJSON(msg)
 
-			// Remover conexões peer nos outros clientes
 			otherClient.mutex.Lock()
 			if pc, exists := otherClient.PeerConns[client.ID]; exists {
 				pc.Close()
@@ -212,7 +211,6 @@ func (h *VideoHub) handleSignalingMessage(msg *SignalingMessage) {
 				}
 			}
 
-			// Broadcast para outros clientes
 			for _, client := range room.Clients {
 				if client.ID != msg.From {
 					updateMsg := &SignalingMessage{
@@ -230,7 +228,6 @@ func (h *VideoHub) handleSignalingMessage(msg *SignalingMessage) {
 		}
 
 	case "chat-message":
-		// Broadcast mensagem de chat
 		for _, client := range room.Clients {
 			if client.ID != msg.From {
 				client.Conn.WriteJSON(msg)
@@ -339,30 +336,6 @@ func (h *VideoHub) cleanupEmptyRooms() {
 	}
 }
 
-func createPeerConnection() (*webrtc.PeerConnection, error) {
-	config := webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{
-					"stun:stun.l.google.com:19302",
-					"stun:stun1.l.google.com:19302",
-					"stun:stun2.l.google.com:19302",
-				},
-			},
-		},
-		ICECandidatePoolSize: 10,
-	}
-
-	// Configurações para melhor qualidade de vídeo
-	mediaEngine := &webrtc.MediaEngine{}
-	if err := mediaEngine.RegisterDefaultCodecs(); err != nil {
-		return nil, err
-	}
-
-	api := webrtc.NewAPI(webrtc.WithMediaEngine(mediaEngine))
-	return api.NewPeerConnection(config)
-}
-
 func handleVideoSignaling(hub *VideoHub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -395,14 +368,12 @@ func handleVideoSignaling(hub *VideoHub, w http.ResponseWriter, r *http.Request)
 		JoinedAt:  time.Now(),
 	}
 
-	// Configurar ping/pong para manter conexão
 	conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	conn.SetPongHandler(func(string) error {
 		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
 
-	// Goroutine para ping periódico
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
@@ -436,18 +407,14 @@ func handleVideoSignaling(hub *VideoHub, w http.ResponseWriter, r *http.Request)
 			msg.From = client.ID
 			msg.RoomID = client.RoomID
 
-			// Processar mensagens WebRTC
 			switch msg.Type {
 			case "offer":
-				// BUG FIX: NÃO processar localmente, apenas repassar
 				log.Printf("Offer de %s para %s", msg.From, msg.To)
 				hub.signal <- &msg
 			case "answer":
-				// BUG FIX: NÃO processar localmente, apenas repassar
 				log.Printf("Answer de %s para %s", msg.From, msg.To)
 				hub.signal <- &msg
 			case "ice-candidate":
-				// BUG FIX: NÃO processar localmente, apenas repassar
 				log.Printf("ICE de %s para %s", msg.From, msg.To)
 				hub.signal <- &msg
 			case "media-state-changed", "chat-message":
@@ -460,6 +427,15 @@ func handleVideoSignaling(hub *VideoHub, w http.ResponseWriter, r *http.Request)
 }
 
 func handleRoomInfo(hub *VideoHub, w http.ResponseWriter, r *http.Request) {
+	// CORS headers para API REST
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	
+	if r.Method == "OPTIONS" {
+		return
+	}
+	
 	roomID := r.URL.Query().Get("room")
 	if roomID == "" {
 		http.Error(w, "room parameter required", http.StatusBadRequest)
@@ -504,6 +480,15 @@ func handleRoomInfo(hub *VideoHub, w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Health check endpoint para Render
+func handleHealth(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status": "healthy",
+		"time":   time.Now(),
+	})
+}
+
 func main() {
 	hub := NewVideoHub()
 	go hub.Run()
@@ -516,11 +501,27 @@ func main() {
 	http.HandleFunc("/room-info", func(w http.ResponseWriter, r *http.Request) {
 		handleRoomInfo(hub, w, r)
 	})
+	
+	// Health check endpoint (Render precisa disso)
+	http.HandleFunc("/health", handleHealth)
 
 	// Servir arquivos estáticos
 	http.Handle("/", http.FileServer(http.Dir("./static/")))
 
-	log.Println("🚀 Servidor de videoconferência iniciado na porta 8084")
-	log.Println("📹 Acesse: http://localhost:8084")
-	log.Fatal(http.ListenAndServe(":8084", nil))
+	// IMPORTANTE: Usar porta do ambiente ou 8084 como fallback
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8084"
+	}
+
+	log.Printf("🚀 Servidor de videoconferência iniciado na porta %s", port)
+	log.Printf("📹 Modo: %s", func() string {
+		if os.Getenv("RENDER") == "true" {
+			return "Produção (Render)"
+		}
+		return "Desenvolvimento"
+	}())
+	
+	// Bind em 0.0.0.0 para Render
+	log.Fatal(http.ListenAndServe("0.0.0.0:"+port, nil))
 }
