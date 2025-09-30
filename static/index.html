@@ -303,6 +303,7 @@
             <button id="toggleMicBtn" class="btn-warning" disabled>🎤 Mic ON/OFF</button>
             <button id="testAudioBtn" class="btn-warning">🔊 Testar Meu Áudio</button>
             <button id="checkMicLevelBtn" class="btn-warning">📊 Ver Nível do Mic</button>
+            <button id="reconnectPeersBtn" class="btn-danger" disabled>🔄 Reconectar P2P</button>
         </div>
         
         <!-- Vídeos -->
@@ -342,6 +343,34 @@
                 document.getElementById('listDevicesBtn').onclick = () => this.listDevices();
                 document.getElementById('testAudioBtn').onclick = () => this.testMyAudio();
                 document.getElementById('checkMicLevelBtn').onclick = () => this.checkMicrophoneLevel();
+                document.getElementById('reconnectPeersBtn').onclick = () => this.reconnectAllPeers();
+            }
+            
+            async reconnectAllPeers() {
+                this.log('🔄 RECONECTANDO TODAS AS CONEXÕES P2P...');
+                
+                // Fechar todas as conexões existentes
+                this.peerConnections.forEach((pc, userId) => {
+                    pc.close();
+                    this.log(`🔌 Fechando conexão antiga com ${userId}`);
+                });
+                this.peerConnections.clear();
+                
+                // Reconectar com todos os usuários visíveis
+                const videoBoxes = document.querySelectorAll('.video-box');
+                for (const box of videoBoxes) {
+                    const userId = box.id.replace('video-', '');
+                    if (userId !== 'local') {
+                        const label = box.querySelector('.video-label');
+                        const userName = label ? label.textContent.replace('🔇', '').replace('🔊', '').trim() : userId;
+                        
+                        this.log(`🔁 Reconectando com ${userName}...`);
+                        await this.createPeerConnection(userId, userName, true);
+                    }
+                }
+                
+                this.log('✅ Processo de reconexão iniciado!');
+                alert('🔄 Reconexão P2P iniciada!\n\nAguarde alguns segundos e teste o áudio novamente.');
             }
             
             async checkMicrophoneLevel() {
@@ -610,9 +639,12 @@
                         this.log('👁️ Modo apenas visualização - sem câmera/microfone');
                     }
                     
-                    // 2. Conectar WebSocket - PORTA CORRIGIDA AQUI!
-                    this.log('🌐 Conectando ao servidor na porta 8084...');
-                    const wsUrl = `ws://localhost:8084/video-signaling?user_id=${this.userId}&user_name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+                    // 2. Conectar WebSocket - Detecta ambiente automaticamente
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const host = window.location.host; // Usa o host atual (localhost:8084 ou seu-app.onrender.com)
+                    const wsUrl = `${protocol}//${host}/video-signaling?user_id=${this.userId}&user_name=${encodeURIComponent(name)}&room=${encodeURIComponent(room)}`;
+                    
+                    this.log(`🌐 Conectando ao servidor: ${host}...`);
                     this.ws = new WebSocket(wsUrl);
                     
                     this.ws.onopen = () => {
@@ -764,59 +796,95 @@
             }
             
             async handleOffer(message) {
-                this.log(`📞 Chamada recebida de ${message.from}`);
+                this.log(`📞 Recebendo oferta de ${message.from}`);
                 
-                const pc = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-                });
-                
-                // Eventos
-                pc.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        this.sendMessage({
-                            type: 'ice-candidate',
-                            to: message.from,
-                            ice: event.candidate.toJSON()
+                try {
+                    // Verificar se já existe conexão
+                    if (this.peerConnections.has(message.from)) {
+                        this.log(`⚠️ Conexão já existe com ${message.from}, recriando...`);
+                        this.peerConnections.get(message.from).close();
+                    }
+                    
+                    const pc = new RTCPeerConnection({
+                        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    });
+                    
+                    // Eventos
+                    pc.onicecandidate = (event) => {
+                        if (event.candidate) {
+                            this.log(`🧊 Enviando ICE candidate de volta para ${message.from}`);
+                            this.sendMessage({
+                                type: 'ice-candidate',
+                                to: message.from,
+                                ice: event.candidate.toJSON()
+                            });
+                        }
+                    };
+                    
+                    pc.ontrack = (event) => {
+                        this.log(`📥 Stream recebido via oferta de ${message.from} - ${event.track.kind}`);
+                        this.updateVideoElement(message.from, event.streams[0]);
+                    };
+                    
+                    pc.onconnectionstatechange = () => {
+                        this.log(`🔗 Estado da conexão (offer) com ${message.from}: ${pc.connectionState}`);
+                    };
+                    
+                    // Adicionar stream local se houver
+                    if (this.localStream) {
+                        this.localStream.getTracks().forEach(track => {
+                            pc.addTrack(track, this.localStream);
+                            this.log(`📤 Adicionando ${track.kind} na resposta para ${message.from}`);
                         });
                     }
-                };
-                
-                pc.ontrack = (event) => {
-                    this.log(`📥 Stream recebido de ${message.from}`);
-                    this.updateVideoElement(message.from, event.streams[0]);
-                };
-                
-                // Adicionar stream local se houver
-                if (this.localStream) {
-                    this.localStream.getTracks().forEach(track => {
-                        pc.addTrack(track, this.localStream);
-                    });
+                    
+                    this.peerConnections.set(message.from, pc);
+                    
+                    await pc.setRemoteDescription(message.offer);
+                    this.log(`✅ Oferta processada de ${message.from}`);
+                    
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    
+                    const answerMsg = {
+                        type: 'answer',
+                        to: message.from,
+                        answer: answer
+                    };
+                    
+                    this.log(`📤 Enviando resposta para ${message.from}`);
+                    this.sendMessage(answerMsg);
+                    
+                } catch (error) {
+                    this.log(`❌ Erro ao processar oferta: ${error.message}`);
                 }
-                
-                this.peerConnections.set(message.from, pc);
-                
-                await pc.setRemoteDescription(message.offer);
-                const answer = await pc.createAnswer();
-                await pc.setLocalDescription(answer);
-                
-                this.sendMessage({
-                    type: 'answer',
-                    to: message.from,
-                    answer: answer
-                });
             }
             
             async handleAnswer(message) {
+                this.log(`📞 Recebendo resposta de ${message.from}`);
                 const pc = this.peerConnections.get(message.from);
                 if (pc) {
-                    await pc.setRemoteDescription(message.answer);
+                    try {
+                        await pc.setRemoteDescription(message.answer);
+                        this.log(`✅ Resposta processada de ${message.from}`);
+                    } catch (error) {
+                        this.log(`❌ Erro ao processar resposta: ${error.message}`);
+                    }
+                } else {
+                    this.log(`⚠️ Nenhuma conexão encontrada para ${message.from}`);
                 }
             }
             
             async handleIceCandidate(message) {
+                this.log(`🧊 Recebendo ICE candidate de ${message.from}`);
                 const pc = this.peerConnections.get(message.from);
                 if (pc && message.ice) {
-                    await pc.addIceCandidate(message.ice);
+                    try {
+                        await pc.addIceCandidate(message.ice);
+                        this.log(`✅ ICE candidate adicionado de ${message.from}`);
+                    } catch (error) {
+                        this.log(`❌ Erro ao adicionar ICE: ${error.message}`);
+                    }
                 }
             }
             
@@ -1052,6 +1120,7 @@
                 document.getElementById('disconnectBtn').disabled = !this.isConnected;
                 document.getElementById('toggleCameraBtn').disabled = !this.isConnected || !this.localStream;
                 document.getElementById('toggleMicBtn').disabled = !this.isConnected || !this.localStream;
+                document.getElementById('reconnectPeersBtn').disabled = !this.isConnected;
             }
             
             updateStatus(message, isConnected) {
